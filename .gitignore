@@ -3,6 +3,11 @@
 # Сборочные артефакты C#
 DllExtractor/bin/
 DllExtractor/obj/
+DllPatcher/bin/
+DllPatcher/obj/
+mod/
+Patched_RU/
+scratch/
 
 # API ключи (никогда не коммитим)
 .env

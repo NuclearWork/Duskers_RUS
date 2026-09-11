@@ -17,9 +17,14 @@ import time
 import google.generativeai as genai
 
 # ===================================================================
-#                    ВСТАВЬ СВОЙ API КЛЮЧ СЮДА
+# API ключ загружается из .env или переменной окружения GEMINI_API_KEY
 # ===================================================================
-API_KEY = "ТВОЙ_API_КЛЮЧ"
+API_KEY = os.environ.get("GEMINI_API_KEY", "")
+if not API_KEY and os.path.exists(os.path.join(os.path.dirname(__file__), ".env")):
+    with open(os.path.join(os.path.dirname(__file__), ".env"), "r", encoding="utf-8") as env_f:
+        for line in env_f:
+            if line.startswith("GEMINI_API_KEY="):
+                API_KEY = line.strip().split("=", 1)[1].strip("\"'")
 # ===================================================================
 
 # ─── Пути ──────────────────────────────────────────────────────────
@@ -37,9 +42,9 @@ RU_DATABASE    = os.path.join(TRANSLATION_DIR, "ru_database.json")   # {source_k
 PROGRESS_FILE  = os.path.join(TRANSLATION_DIR, "progress.json")      # {batch_id: "done"}
 
 # ─── Настройки API ─────────────────────────────────────────────────
-MODEL_NAME  = "gemini-2.0-flash-lite"   # Бесплатный, быстрый
-BATCH_SIZE  = 100                        # Строк за один запрос
-DELAY       = 2.5                        # Секунд между запросами (макс. 24 rpm)
+MODEL_NAME  = "gemini-3.5-flash-lite"
+BATCH_SIZE  = 25                        # Уменьшили для пробития зависших строк
+DELAY       = 3.0                        # Секунд между запросами (макс. 24 rpm)
 
 # ─── Фильтры технических строк ──────────────────────────────────────
 SKIP_PATTERNS = [
@@ -117,7 +122,7 @@ def load_json(path: str, default):
 
 def translate_batch(model, batch: dict) -> dict:
     """Переводит батч {id: текст}. Возвращает {id: перевод}."""
-    prompt = json.dumps(batch, ensure_ascii=False)
+    prompt = SYSTEM_PROMPT + "\n\nJSON TO TRANSLATE:\n" + json.dumps(batch, ensure_ascii=False)
     retries = 4
     backoff = 10
     while retries > 0:
@@ -226,19 +231,12 @@ def main():
     genai.configure(api_key=API_KEY)
     model = genai.GenerativeModel(
         MODEL_NAME,
-        system_instruction=SYSTEM_PROMPT,
         generation_config=genai.types.GenerationConfig(temperature=0.1),
     )
     print(f"✅ Модель: {MODEL_NAME}\n")
 
     # Переводим батчами
     for batch_num, batch_start in enumerate(range(0, total_left, BATCH_SIZE)):
-        batch_id = f"batch_{batch_num:04d}"
-
-        # Пропускаем уже выполненные батчи (защита от дублей при рестарте)
-        if progress.get(batch_id) == "done":
-            continue
-
         chunk = pending[batch_start:batch_start + BATCH_SIZE]
         batch_dict = {str(i): text for i, (_, text) in enumerate(chunk)}
 
@@ -255,10 +253,8 @@ def main():
                 if ru_text:
                     ru_db[key] = ru_text
 
-            # Атомарно сохраняем базу переводов и прогресс
+            # Атомарно сохраняем базу переводов
             atomic_save(RU_DATABASE, ru_db)
-            progress[batch_id] = "done"
-            atomic_save(PROGRESS_FILE, progress)
 
             print(f"✓ {len(translated)} переведено")
         else:
