@@ -13,8 +13,19 @@ namespace DllExtractor
     {
         static void Main(string[] args)
         {
-            string dllPath = @"Z:\SteamLibrary\steamapps\common\Duskers\Duskers_Data\Managed\Assembly-CSharp.dll";
-            string outPath = @"C:\Users\user\Documents\GITHUB\Duskers_RUS\Exported_EN\dll_strings_en.json";
+            string defaultDll = @"Z:\SteamLibrary\steamapps\common\Duskers\Duskers_Data\Managed\Assembly-CSharp.dll";
+            string defaultOut = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "Exported_EN", "dll_strings_en.json"));
+
+            string dllPath = args.Length > 0 ? args[0] : defaultDll;
+            string outPath = args.Length > 1 ? args[1] : defaultOut;
+
+            if (!File.Exists(dllPath))
+            {
+                Console.WriteLine($"[!] Assembly-CSharp.dll не найдена: {dllPath}");
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
 
             var module = ModuleDefinition.ReadModule(dllPath);
             var extracted = new List<Dictionary<string, string>>();
@@ -31,7 +42,7 @@ namespace DllExtractor
                     {
                         if (instruction.OpCode == OpCodes.Ldstr)
                         {
-                            string str = instruction.Operand as string;
+                            string? str = instruction.Operand as string;
                             if (str != null && str.Length > 1 && alphaRegex.IsMatch(str))
                             {
                                 // Basic filtering for Unity/internal strings
@@ -54,11 +65,15 @@ namespace DllExtractor
                 }
             }
 
-            var options = new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+            var options = new JsonSerializerOptions 
+            { 
+                WriteIndented = true, 
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+            };
             string json = JsonSerializer.Serialize(extracted, options);
             File.WriteAllText(outPath, json);
 
-            Console.WriteLine($"Extracted {extracted.Count} string literals from Assembly-CSharp.dll");
+            Console.WriteLine($"Extracted {extracted.Count} string literals from Assembly-CSharp.dll to {outPath}");
         }
     }
 }
