@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "yJAdRRHLCLhKVTEnvjyMifELNxr5uxpsmn+8fOqksRvzN5w4aW4698oe0wFsXzhf4HDwrTnIs3ezAAURshrwJQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\user\\Documents\\GITHUB\\Duskers_RUS\\DllExtractor\\DllExtractor.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\user\\.nuget\\packages\\mono.cecil\\0.11.6\\mono.cecil.0.11.6.nupkg.sha512"
+  ],
+  "logs": []
+}
