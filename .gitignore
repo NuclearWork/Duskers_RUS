@@ -1,0 +1,20 @@
+# Git ignore для Duskers RUS
+
+# Сборочные артефакты C#
+DllExtractor/bin/
+DllExtractor/obj/
+
+# API ключи (никогда не коммитим)
+.env
+*.secret
+
+# Python кеш
+__pycache__/
+*.pyc
+*.pyo
+
+# Временные файлы переводчика
+Translation/*.tmp
+
+# Тестовые файлы
+test_*.py
