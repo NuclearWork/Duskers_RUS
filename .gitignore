@@ -6,6 +6,7 @@ DllExtractor/obj/
 DllPatcher/bin/
 DllPatcher/obj/
 mod/
+orig_en/
 Patched_RU/
 dist/
 build/
