@@ -8,6 +8,8 @@ DllPatcher/obj/
 mod/
 Patched_RU/
 dist/
+build/
+*.spec
 scratch/
 
 # API ключи (никогда не коммитим)
