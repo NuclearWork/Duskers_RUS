@@ -14,6 +14,12 @@ import subprocess
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
+try:
+    from PIL import Image, ImageTk
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
 # Определение базовой папки (поддержка запуска как скриптом, так и через PyInstaller .exe)
 if getattr(sys, 'frozen', False):
     APP_DIR = sys._MEIPASS
@@ -27,6 +33,11 @@ MOD_DATA_DIR = os.path.join(APP_DIR, "mod", "Duskers_Data")
 if not os.path.exists(MOD_DATA_DIR):
     MOD_DATA_DIR = os.path.join(EXE_DIR, "mod", "Duskers_Data")
 
+# Папка с ресурсами и иконками
+ICONS_DIR = os.path.join(APP_DIR, "Resources", "Icons")
+if not os.path.exists(ICONS_DIR):
+    ICONS_DIR = os.path.join(EXE_DIR, "Resources", "Icons")
+
 DEFAULT_STEAM_PATHS = [
     r"Z:\SteamLibrary\steamapps\common\Duskers\Duskers_Data",
     r"C:\Program Files (x86)\Steam\steamapps\common\Duskers\Duskers_Data",
@@ -35,6 +46,24 @@ DEFAULT_STEAM_PATHS = [
     r"E:\SteamLibrary\steamapps\common\Duskers\Duskers_Data",
     r"F:\SteamLibrary\steamapps\common\Duskers\Duskers_Data"
 ]
+
+def load_ui_image(filename, size=None):
+    """Безопасная загрузка изображения через PIL / PhotoImage"""
+    filepath = os.path.join(ICONS_DIR, filename)
+    if not os.path.exists(filepath):
+        return None
+    if HAS_PIL:
+        try:
+            im = Image.open(filepath)
+            if size:
+                im = im.resize(size, Image.Resampling.LANCZOS)
+            return ImageTk.PhotoImage(im)
+        except Exception:
+            pass
+    try:
+        return tk.PhotoImage(file=filepath)
+    except Exception:
+        return None
 
 def is_game_running():
     """Проверяет, запущена ли сейчас игра Duskers (исключая процесс самого патчера/установщика)"""
@@ -90,14 +119,52 @@ class DuskersPatcherGUI(tk.Tk):
         super().__init__()
 
         self.title("Duskers — Менеджер Русификатора [v1.2]")
-        self.geometry("700x590")
-        self.minsize(640, 520)
-        self.configure(bg="#0c1017")
+        self.geometry("710x620")
+        self.minsize(660, 560)
+        self.configure(bg="#080c13")
+
+        # Назначение иконки окна
+        self._apply_window_icon()
+
+        # Загрузка визуальных ассетов
+        self._load_assets()
 
         self.game_path_var = tk.StringVar(value=find_game_dir())
 
         self.setup_ui()
         self.check_status()
+
+    def _apply_window_icon(self):
+        """Устанавливает иконку приложения в заголовок и панель задач Windows"""
+        ico_file = os.path.join(ICONS_DIR, "app_icon.ico")
+        png_file = os.path.join(ICONS_DIR, "app_icon.png")
+
+        if os.path.exists(ico_file):
+            try:
+                self.iconbitmap(ico_file)
+            except Exception:
+                pass
+
+        if os.path.exists(png_file):
+            try:
+                self._app_icon_photo = load_ui_image("app_icon.png")
+                if self._app_icon_photo:
+                    self.iconphoto(True, self._app_icon_photo)
+            except Exception:
+                pass
+
+    def _load_assets(self):
+        """Кэширует графические иконки и баннер"""
+        self.img_banner = load_ui_image("header_banner.png", (676, 76))
+        self.img_install = load_ui_image("icon_install.png", (22, 22))
+        self.img_restore = load_ui_image("icon_restore.png", (22, 22))
+        self.img_steam = load_ui_image("icon_steam.png", (18, 18))
+        self.img_folder = load_ui_image("icon_folder.png", (18, 18))
+        self.img_browse = load_ui_image("icon_browse.png", (16, 16))
+        
+        self.img_led_green = load_ui_image("led_green.png", (14, 14))
+        self.img_led_yellow = load_ui_image("led_yellow.png", (14, 14))
+        self.img_led_red = load_ui_image("led_red.png", (14, 14))
 
     def setup_ui(self):
         style = ttk.Style(self)
@@ -105,181 +172,252 @@ class DuskersPatcherGUI(tk.Tk):
 
         self.font_term = ("Consolas", 10)
         self.font_term_bold = ("Consolas", 10, "bold")
-        self.font_header = ("Consolas", 14, "bold")
-        self.font_title = ("Consolas", 16, "bold")
+        self.font_header = ("Consolas", 13, "bold")
+        self.font_title = ("Consolas", 15, "bold")
 
-        # Верхняя панель (Заголовок в терминальном стиле)
-        header_frame = tk.Frame(self, bg="#111722", bd=1, relief="solid", highlightbackground="#1b2a3f", highlightthickness=1)
-        header_frame.pack(fill="x", padx=16, pady=(16, 10))
+        # 1. Верхний баннер в стиле ретро-терминала CRT
+        if self.img_banner:
+            banner_frame = tk.Frame(self, bg="#080c13")
+            banner_frame.pack(fill="x", padx=16, pady=(12, 6))
+            self.banner_lbl = tk.Label(banner_frame, image=self.img_banner, bg="#080c13", bd=0)
+            self.banner_lbl.pack(anchor="center")
+        else:
+            # Fallback текстовый заголовок
+            header_frame = tk.Frame(self, bg="#111722", bd=1, relief="solid", highlightbackground="#1b2a3f", highlightthickness=1)
+            header_frame.pack(fill="x", padx=16, pady=(12, 6))
+            title_lbl = tk.Label(
+                header_frame, 
+                text="🛰️ DUSKERS RUSSIAN LOCALIZATION MANAGER", 
+                fg="#00ff66", 
+                bg="#111722", 
+                font=self.font_title
+            )
+            title_lbl.pack(pady=(10, 2))
+            sub_lbl = tk.Label(
+                header_frame, 
+                text="Полный перевод интерфейса, мануала, бортовых журналов и терминала", 
+                fg="#7a92a5", 
+                bg="#111722", 
+                font=self.font_term
+            )
+            sub_lbl.pack(pady=(0, 10))
 
-        title_lbl = tk.Label(
-            header_frame, 
-            text="🛰️ DUSKERS RUSSIAN LOCALIZATION MANAGER", 
-            fg="#00ff66", 
-            bg="#111722", 
-            font=self.font_title
-        )
-        title_lbl.pack(pady=(10, 2))
-
-        sub_lbl = tk.Label(
-            header_frame, 
-            text="Полный перевод интерфейса, мануала, бортовых журналов и терминала", 
-            fg="#7a92a5", 
-            bg="#111722", 
-            font=self.font_term
-        )
-        sub_lbl.pack(pady=(0, 10))
-
-        # Секция выбора папки с игрой
+        # 2. Секция выбора папки с игрой
         path_frame = tk.LabelFrame(
             self, 
             text=" [ ПАПКА С ИГРОЙ ] ", 
             fg="#38ef7d", 
-            bg="#0c1017", 
+            bg="#0c121a", 
             font=self.font_term_bold, 
             bd=1, 
             relief="groove"
         )
-        path_frame.pack(fill="x", padx=16, pady=6)
+        path_frame.pack(fill="x", padx=16, pady=5)
 
-        path_inner = tk.Frame(path_frame, bg="#0c1017")
-        path_inner.pack(fill="x", padx=10, pady=8)
+        path_inner = tk.Frame(path_frame, bg="#0c121a")
+        path_inner.pack(fill="x", padx=10, pady=7)
 
         self.path_entry = tk.Entry(
             path_inner, 
             textvariable=self.game_path_var, 
             font=self.font_term, 
-            bg="#161e2b", 
+            bg="#131c28", 
             fg="#e0e8f0", 
             insertbackground="#00ff66",
             bd=1,
-            relief="solid"
+            relief="solid",
+            highlightcolor="#00ff66",
+            highlightthickness=1
         )
         self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 8), ipady=4)
         self.path_entry.bind("<KeyRelease>", lambda e: self.check_status())
 
-        browse_btn = tk.Button(
-            path_inner, 
-            text="Обзор...", 
-            font=self.font_term_bold, 
-            bg="#202d3f", 
-            fg="#ffffff", 
-            activebackground="#2c3e55", 
-            activeforeground="#00ff66", 
-            bd=0, 
-            padx=14, 
-            pady=4,
-            cursor="hand2",
-            command=self.browse_folder
-        )
-        browse_btn.pack(side="right")
+        # Кнопка обзора с иконкой
+        browse_kwargs = {
+            "text": " Обзор...",
+            "font": self.font_term_bold,
+            "bg": "#1e2a38",
+            "fg": "#ffffff",
+            "activebackground": "#29394d",
+            "activeforeground": "#00ff66",
+            "bd": 1,
+            "relief": "solid",
+            "padx": 10,
+            "pady": 3,
+            "cursor": "hand2",
+            "command": self.browse_folder
+        }
+        if self.img_browse:
+            browse_kwargs["image"] = self.img_browse
+            browse_kwargs["compound"] = "left"
+
+        self.browse_btn = tk.Button(path_inner, **browse_kwargs)
+        self.browse_btn.pack(side="right")
+        self._add_hover_effect(self.browse_btn, "#1e2a38", "#2a3b4e")
+
+        # Строка статуса пути со светодиодом
+        status_line = tk.Frame(path_frame, bg="#0c121a")
+        status_line.pack(fill="x", padx=10, pady=(0, 6))
+
+        self.path_led_lbl = tk.Label(status_line, image=self.img_led_yellow, bg="#0c121a")
+        self.path_led_lbl.pack(side="left", padx=(0, 6))
 
         self.status_lbl = tk.Label(
-            path_frame, 
+            status_line, 
             text="Поиск игры...", 
             font=self.font_term, 
-            bg="#0c1017", 
+            bg="#0c121a", 
             fg="#ffbb33", 
             anchor="w"
         )
-        self.status_lbl.pack(fill="x", padx=10, pady=(0, 6))
+        self.status_lbl.pack(side="left", fill="x", expand=True)
 
-        # Информационная карточка состояния
-        self.info_frame = tk.Frame(self, bg="#111722", bd=1, relief="solid", highlightbackground="#1b2a3f", highlightthickness=1)
-        self.info_frame.pack(fill="x", padx=16, pady=4)
+        # 3. Информационная панель телеметрии (Язык + Бэкап)
+        info_frame = tk.LabelFrame(
+            self,
+            text=" [ СТАТУС ТЕЛЕМЕТРИИ ] ",
+            fg="#38ef7d",
+            bg="#0c121a",
+            font=self.font_term_bold,
+            bd=1,
+            relief="groove"
+        )
+        info_frame.pack(fill="x", padx=16, pady=4)
+
+        # Строка 1: Текущий язык
+        row_lang = tk.Frame(info_frame, bg="#0c121a")
+        row_lang.pack(fill="x", padx=10, pady=(6, 3))
+
+        self.lang_led = tk.Label(row_lang, image=self.img_led_yellow, bg="#0c121a")
+        self.lang_led.pack(side="left", padx=(0, 6))
 
         self.lang_status_lbl = tk.Label(
-            self.info_frame, 
+            row_lang, 
             text="ТЕКУЩИЙ ЯЗЫК: Не определен", 
             font=self.font_term_bold, 
-            bg="#111722", 
-            fg="#ffffff"
+            bg="#0c121a", 
+            fg="#ffffff",
+            anchor="w"
         )
-        self.lang_status_lbl.pack(anchor="w", padx=12, pady=(6, 2))
+        self.lang_status_lbl.pack(side="left", fill="x", expand=True)
+
+        # Строка 2: Резервная копия
+        row_backup = tk.Frame(info_frame, bg="#0c121a")
+        row_backup.pack(fill="x", padx=10, pady=(0, 6))
+
+        self.backup_led = tk.Label(row_backup, image=self.img_led_yellow, bg="#0c121a")
+        self.backup_led.pack(side="left", padx=(0, 6))
 
         self.backup_status_lbl = tk.Label(
-            self.info_frame, 
+            row_backup, 
             text="РЕЗЕРВНАЯ КОПИЯ (BACKUP): Не найдена", 
             font=self.font_term, 
-            bg="#111722", 
-            fg="#7a92a5"
+            bg="#0c121a", 
+            fg="#7a92a5",
+            anchor="w"
         )
-        self.backup_status_lbl.pack(anchor="w", padx=12, pady=(0, 6))
+        self.backup_status_lbl.pack(side="left", fill="x", expand=True)
 
-        # Панель основных действий (Установить / Восстановить)
-        actions_frame = tk.Frame(self, bg="#0c1017")
+        # 4. Основные командные кнопки (Установить / Восстановить)
+        actions_frame = tk.Frame(self, bg="#080c13")
         actions_frame.pack(fill="x", padx=16, pady=6)
 
-        self.install_btn = tk.Button(
-            actions_frame, 
-            text="✔ УСТАНОВИТЬ РУСИФИКАТОР", 
-            font=("Consolas", 11, "bold"), 
-            bg="#008844", 
-            fg="#ffffff", 
-            activebackground="#00aa55", 
-            activeforeground="#ffffff", 
-            bd=0, 
-            pady=9,
-            cursor="hand2",
-            command=self.start_install
-        )
+        # Кнопка «УСТАНОВИТЬ РУСИФИКАТОР»
+        install_kwargs = {
+            "text": "  УСТАНОВИТЬ РУСИФИКАТОР",
+            "font": ("Consolas", 11, "bold"),
+            "bg": "#006b37",
+            "fg": "#ffffff",
+            "activebackground": "#00994f",
+            "activeforeground": "#ffffff",
+            "bd": 1,
+            "relief": "solid",
+            "pady": 8,
+            "cursor": "hand2",
+            "command": self.start_install
+        }
+        if self.img_install:
+            install_kwargs["image"] = self.img_install
+            install_kwargs["compound"] = "left"
+
+        self.install_btn = tk.Button(actions_frame, **install_kwargs)
         self.install_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        self._add_hover_effect(self.install_btn, "#006b37", "#008f49")
 
-        self.restore_btn = tk.Button(
-            actions_frame, 
-            text="↺ ВОССТАНОВИТЬ ОРИГИНАЛ (EN)", 
-            font=("Consolas", 11, "bold"), 
-            bg="#3a2222", 
-            fg="#ff8888", 
-            activebackground="#552c2c", 
-            activeforeground="#ffffff", 
-            bd=0, 
-            pady=9,
-            cursor="hand2",
-            command=self.start_restore
-        )
+        # Кнопка «ВОССТАНОВИТЬ ОРИГИНАЛ»
+        restore_kwargs = {
+            "text": "  ВОССТАНОВИТЬ ОРИГИНАЛ (EN)",
+            "font": ("Consolas", 11, "bold"),
+            "bg": "#3d1b1b",
+            "fg": "#ff9999",
+            "activebackground": "#5c2626",
+            "activeforeground": "#ffffff",
+            "bd": 1,
+            "relief": "solid",
+            "pady": 8,
+            "cursor": "hand2",
+            "command": self.start_restore
+        }
+        if self.img_restore:
+            restore_kwargs["image"] = self.img_restore
+            restore_kwargs["compound"] = "left"
+
+        self.restore_btn = tk.Button(actions_frame, **restore_kwargs)
         self.restore_btn.pack(side="right", fill="x", expand=True, padx=(5, 0))
+        self._add_hover_effect(self.restore_btn, "#3d1b1b", "#542424")
 
-        # Вспомогательная панель быстрых действий (Запуск игры / Открыть папку)
-        sub_actions_frame = tk.Frame(self, bg="#0c1017")
+        # 5. Вспомогательная панель (Запуск игры / Открыть папку)
+        sub_actions_frame = tk.Frame(self, bg="#080c13")
         sub_actions_frame.pack(fill="x", padx=16, pady=(0, 6))
 
-        self.launch_btn = tk.Button(
-            sub_actions_frame, 
-            text="▶ ЗАПУСТИТЬ ИГРУ (STEAM)", 
-            font=("Consolas", 9, "bold"), 
-            bg="#1b2a3f", 
-            fg="#38ef7d", 
-            activebackground="#263d5c", 
-            activeforeground="#00ff66", 
-            bd=0, 
-            pady=5,
-            cursor="hand2",
-            command=self.launch_game
-        )
+        launch_kwargs = {
+            "text": "  ЗАПУСТИТЬ ИГРУ (STEAM)",
+            "font": ("Consolas", 9, "bold"),
+            "bg": "#141e2b",
+            "fg": "#38ef7d",
+            "activebackground": "#1e2d40",
+            "activeforeground": "#00ff66",
+            "bd": 1,
+            "relief": "solid",
+            "pady": 5,
+            "cursor": "hand2",
+            "command": self.launch_game
+        }
+        if self.img_steam:
+            launch_kwargs["image"] = self.img_steam
+            launch_kwargs["compound"] = "left"
+
+        self.launch_btn = tk.Button(sub_actions_frame, **launch_kwargs)
         self.launch_btn.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        self._add_hover_effect(self.launch_btn, "#141e2b", "#1c2b3d")
 
-        self.open_dir_btn = tk.Button(
-            sub_actions_frame, 
-            text="📁 ОТКРЫТЬ ПАПКУ ИГРЫ", 
-            font=("Consolas", 9, "bold"), 
-            bg="#1b2a3f", 
-            fg="#a0b8d0", 
-            activebackground="#263d5c", 
-            activeforeground="#ffffff", 
-            bd=0, 
-            pady=5,
-            cursor="hand2",
-            command=self.open_game_folder
-        )
+        open_dir_kwargs = {
+            "text": "  ОТКРЫТЬ ПАПКУ ИГРЫ",
+            "font": ("Consolas", 9, "bold"),
+            "bg": "#141e2b",
+            "fg": "#a0b8d0",
+            "activebackground": "#1e2d40",
+            "activeforeground": "#ffffff",
+            "bd": 1,
+            "relief": "solid",
+            "pady": 5,
+            "cursor": "hand2",
+            "command": self.open_game_folder
+        }
+        if self.img_folder:
+            open_dir_kwargs["image"] = self.img_folder
+            open_dir_kwargs["compound"] = "left"
+
+        self.open_dir_btn = tk.Button(sub_actions_frame, **open_dir_kwargs)
         self.open_dir_btn.pack(side="right", fill="x", expand=True, padx=(5, 0))
+        self._add_hover_effect(self.open_dir_btn, "#141e2b", "#1c2b3d")
 
-        # Консольный лог действий
+        # 6. Консольный лог действий
         log_frame = tk.LabelFrame(
             self, 
-            text=" [ СИСТЕМНЫЙ ЖУРНАЛ ] ", 
+            text=" [ СИСТЕМНЫЙ ТЕРМИНАЛ MUTEKI ] ", 
             fg="#38ef7d", 
-            bg="#0c1017", 
+            bg="#080c13", 
             font=self.font_term_bold, 
             bd=1, 
             relief="groove"
@@ -289,28 +427,59 @@ class DuskersPatcherGUI(tk.Tk):
         self.log_text = tk.Text(
             log_frame, 
             font=("Consolas", 9), 
-            bg="#070a0f", 
+            bg="#05080d", 
             fg="#00ff66", 
             insertbackground="#00ff66", 
             bd=0,
             wrap="word",
-            padx=8,
+            padx=10,
             pady=8
         )
         self.log_text.pack(side="left", fill="both", expand=True)
 
-        scrollbar = tk.Scrollbar(log_frame, command=self.log_text.yview, bg="#111722")
+        # Цветовые теги для лога
+        self.log_text.tag_config("ok", foreground="#00ff66")
+        self.log_text.tag_config("info", foreground="#55d4ff")
+        self.log_text.tag_config("warn", foreground="#ffbb33")
+        self.log_text.tag_config("err", foreground="#ff4444")
+        self.log_text.tag_config("dim", foreground="#5a758c")
+
+        scrollbar = tk.Scrollbar(log_frame, command=self.log_text.yview, bg="#0e1622")
         scrollbar.pack(side="right", fill="y")
         self.log_text.config(yscrollcommand=scrollbar.set)
 
         self.log("Система инициализирована. Версия русификатора: v1.2")
+        self.log("Графический модуль MUTEKI OS загружен.")
+
+    def _add_hover_effect(self, widget, normal_bg, hover_bg):
+        """Добавляет интерактивную подсветку кнопок при наведении мыши"""
+        def on_enter(e):
+            if str(widget["state"]) != "disabled":
+                widget.config(bg=hover_bg)
+        def on_leave(e):
+            if str(widget["state"]) != "disabled":
+                widget.config(bg=normal_bg)
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
 
     def log(self, message):
         """Потокобезопасный вывод сообщения в консоль GUI"""
         self.after(0, self._do_log, message)
 
     def _do_log(self, message):
-        self.log_text.insert("end", f"> {message}\n")
+        tag = "normal"
+        if message.startswith("[✓]") or message.startswith("✅") or "УСПЕШНО" in message:
+            tag = "ok"
+        elif message.startswith("[!]") or message.startswith("⚠️") or "Внимание" in message:
+            tag = "warn"
+        elif message.startswith("[X]") or message.startswith("❌") or "Ошибка" in message:
+            tag = "err"
+        elif message.startswith("---") or message.startswith(">"):
+            tag = "dim"
+        elif message.startswith("📁") or message.startswith("📦") or message.startswith("⚙️"):
+            tag = "info"
+
+        self.log_text.insert("end", f"> {message}\n", tag)
         self.log_text.see("end")
 
     def browse_folder(self):
@@ -337,19 +506,25 @@ class DuskersPatcherGUI(tk.Tk):
     def check_status(self):
         game_path = self.get_game_path()
         if not game_path:
-            self.status_lbl.config(text="[X] Папка Duskers_Data не найдена по указанному пути", fg="#ff4444")
+            if self.img_led_red:
+                self.path_led_lbl.config(image=self.img_led_red)
+                self.lang_led.config(image=self.img_led_red)
+                self.backup_led.config(image=self.img_led_red)
+            self.status_lbl.config(text="Папка Duskers_Data не найдена по указанному пути", fg="#ff4444")
             self.lang_status_lbl.config(text="ТЕКУЩИЙ ЯЗЫК: Недоступно (укажите папку)", fg="#ff4444")
             self.backup_status_lbl.config(text="РЕЗЕРВНАЯ КОПИЯ: Недоступно", fg="#7a92a5")
-            self.install_btn.config(state="disabled", bg="#223328")
-            self.restore_btn.config(state="disabled", bg="#281e1e")
-            self.launch_btn.config(state="disabled")
-            self.open_dir_btn.config(state="disabled")
+            self.install_btn.config(state="disabled", bg="#16221c")
+            self.restore_btn.config(state="disabled", bg="#201616")
+            self.launch_btn.config(state="disabled", bg="#101720")
+            self.open_dir_btn.config(state="disabled", bg="#101720")
             return
 
-        self.status_lbl.config(text=f"[✓] Игра обнаружена: {game_path}", fg="#00ff66")
-        self.install_btn.config(state="normal", bg="#008844")
-        self.launch_btn.config(state="normal")
-        self.open_dir_btn.config(state="normal")
+        if self.img_led_green:
+            self.path_led_lbl.config(image=self.img_led_green)
+        self.status_lbl.config(text=f"Игра обнаружена: {game_path}", fg="#00ff66")
+        self.install_btn.config(state="normal", bg="#006b37")
+        self.launch_btn.config(state="normal", bg="#141e2b")
+        self.open_dir_btn.config(state="normal", bg="#141e2b")
 
         # Проверка наличия бэкапа
         backup_dir = os.path.join(game_path, "backup_en")
@@ -358,24 +533,32 @@ class DuskersPatcherGUI(tk.Tk):
 
         has_backup = os.path.exists(backup_res) and os.path.exists(backup_dll)
         if has_backup:
+            if self.img_led_green:
+                self.backup_led.config(image=self.img_led_green)
             self.backup_status_lbl.config(
                 text=f"РЕЗЕРВНАЯ КОПИЯ: Сохранена ({backup_dir})", 
                 fg="#00ff66"
             )
-            self.restore_btn.config(state="normal", bg="#552222")
+            self.restore_btn.config(state="normal", bg="#3d1b1b")
         else:
+            if self.img_led_yellow:
+                self.backup_led.config(image=self.img_led_yellow)
             self.backup_status_lbl.config(
                 text="РЕЗЕРВНАЯ КОПИЯ: Отсутствует (будет создана при первой установке)", 
                 fg="#ffbb33"
             )
-            self.restore_btn.config(state="disabled", bg="#281e1e")
+            self.restore_btn.config(state="disabled", bg="#201616")
 
         # Проверка маркера перевода
         marker_file = os.path.join(game_path, "duskers_rus.installed")
         if os.path.exists(marker_file):
+            if self.img_led_green:
+                self.lang_led.config(image=self.img_led_green)
             self.lang_status_lbl.config(text="ТЕКУЩИЙ ЯЗЫК: Русский [РУСИФИКАТОР АКТИВЕН]", fg="#00ff66")
         else:
-            self.lang_status_lbl.config(text="ТЕКУЩИЙ ЯЗЫК: Английский (Оригинал)", fg="#e0e8f0")
+            if self.img_led_yellow:
+                self.lang_led.config(image=self.img_led_yellow)
+            self.lang_status_lbl.config(text="ТЕКУЩИЙ ЯЗЫК: Английский (Оригинал Steam)", fg="#e0e8f0")
 
     def set_busy(self, is_busy):
         self.after(0, self._do_set_busy, is_busy)
@@ -385,6 +568,7 @@ class DuskersPatcherGUI(tk.Tk):
         self.install_btn.config(state=state)
         self.restore_btn.config(state=state)
         self.path_entry.config(state=state)
+        self.browse_btn.config(state=state)
         self.launch_btn.config(state=state)
         self.open_dir_btn.config(state=state)
 
@@ -471,19 +655,20 @@ class DuskersPatcherGUI(tk.Tk):
                 if os.path.exists(orig_sa) and not os.path.exists(backup_sa):
                     shutil.copytree(orig_sa, backup_sa, dirs_exist_ok=True)
 
-                self.log(f"[✓] Бэкап сохранен в: {backup_dir}")
+                self.log("[✓] Резервная копия оригинала успешно сохранена в backup_en/.")
             except Exception as e:
                 self.log(f"[!] Ошибка при создании бэкапа: {e}")
-                self.after(0, lambda err=e: messagebox.showerror("Ошибка", f"Не удалось создать бэкап: {err}"))
+                self.after(0, lambda err=e: messagebox.showerror("Ошибка", f"Не удалось создать резервную копию: {err}"))
                 self.set_busy(False)
                 return
         else:
-            self.log("Резервная копия оригинальных файлов уже сохранена.")
+            self.log("[i] Резервная копия оригинальных файлов уже сохранена.")
 
         # 3. Устанавливаем файлы мода
         self.log("Копирование русифицированных ресурсов (resources.assets)...")
         try:
             shutil.copy2(src_res, os.path.join(game_path, "resources.assets"))
+
             self.log("Копирование переведенной сборки (Assembly-CSharp.dll)...")
             shutil.copy2(src_dll, os.path.join(game_path, "Managed", "Assembly-CSharp.dll"))
 
@@ -493,8 +678,9 @@ class DuskersPatcherGUI(tk.Tk):
                 dst_sa = os.path.join(game_path, "StreamingAssets")
                 shutil.copytree(src_sa, dst_sa, dirs_exist_ok=True)
 
-            # Записываем маркер установки
-            with open(os.path.join(game_path, "duskers_rus.installed"), "w", encoding="utf-8") as f:
+            # Создаем маркер установки
+            marker_file = os.path.join(game_path, "duskers_rus.installed")
+            with open(marker_file, "w", encoding="utf-8") as f:
                 f.write("Duskers Russian Localization v1.2")
 
             self.log("✅ РУСИФИКАТОР УСПЕШНО УСТАНОВЛЕН!")
@@ -572,9 +758,6 @@ class DuskersPatcherGUI(tk.Tk):
 
         self.set_busy(False)
 
-def main():
+if __name__ == "__main__":
     app = DuskersPatcherGUI()
     app.mainloop()
-
-if __name__ == "__main__":
-    main()

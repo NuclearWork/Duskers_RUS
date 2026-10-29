@@ -70,7 +70,7 @@
    ```
 4. Собрать графическое приложение в автономный `.exe`:
    ```bash
-   python -m PyInstaller --onefile --noconsole --name "Duskers-RU-Patcher" --add-data "mod/Duskers_Data;mod/Duskers_Data" gui_patcher.py
+   python -m PyInstaller --onefile --noconsole --icon="Resources/Icons/app_icon.ico" --name "Duskers-RU-Patcher" --add-data "Resources/Icons;Resources/Icons" --add-data "mod/Duskers_Data;mod/Duskers_Data" gui_patcher.py
    ```
 5. Создать релизный ZIP-архив:
    ```bash
