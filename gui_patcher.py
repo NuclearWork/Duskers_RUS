@@ -118,7 +118,7 @@ class DuskersPatcherGUI(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Duskers — Менеджер Русификатора [v1.2]")
+        self.title("Duskers — Менеджер Русификатора [v1.3]")
         self.geometry("710x620")
         self.minsize(660, 560)
         self.configure(bg="#080c13")
@@ -448,7 +448,7 @@ class DuskersPatcherGUI(tk.Tk):
         scrollbar.pack(side="right", fill="y")
         self.log_text.config(yscrollcommand=scrollbar.set)
 
-        self.log("Система инициализирована. Версия русификатора: v1.2")
+        self.log("Система инициализирована. Версия русификатора: v1.3")
         self.log("Графический модуль MUTEKI OS загружен.")
 
     def _add_hover_effect(self, widget, normal_bg, hover_bg):
@@ -681,7 +681,7 @@ class DuskersPatcherGUI(tk.Tk):
             # Создаем маркер установки
             marker_file = os.path.join(game_path, "duskers_rus.installed")
             with open(marker_file, "w", encoding="utf-8") as f:
-                f.write("Duskers Russian Localization v1.2")
+                f.write("Duskers Russian Localization v1.3")
 
             self.log("✅ РУСИФИКАТОР УСПЕШНО УСТАНОВЛЕН!")
             self.after(0, self.check_status)

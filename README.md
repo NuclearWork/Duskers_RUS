@@ -2,7 +2,7 @@
 
 [![Game Version](https://img.shields.io/badge/Game_Version-1.205-blue.svg)](https://store.steampowered.com/app/254320/Duskers/)
 [![Translation Status](https://img.shields.io/badge/Translation-100%25-brightgreen.svg)]()
-[![Release](https://img.shields.io/badge/Release-v1.2-orange.svg)](https://github.com/NuclearWork/Duskers_RUS/releases)
+[![Release](https://img.shields.io/badge/Release-v1.3-orange.svg)](https://github.com/NuclearWork/Duskers_RUS/releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Полная качественная локализация текста, терминала, справки и всех сюжетных журналов для научно-фантастического симулятора выживания **Duskers** (Misfits Attic).
@@ -33,9 +33,9 @@
 
 ---
 
-### Способ 2: Ручная распаковка архива `Duskers_RUS_v1.2.zip`
+### Способ 2: Ручная распаковка архива `Duskers_RUS_v1.3.zip`
 
-1. Скачайте архив **`Duskers_RUS_v1.2.zip`** из раздела **[Releases](https://github.com/NuclearWork/Duskers_RUS/releases)**.
+1. Скачайте архив **`Duskers_RUS_v1.3.zip`** из раздела **[Releases](https://github.com/NuclearWork/Duskers_RUS/releases)**.
 2. Откройте папку с установленной игрой в Steam:
    * Нажмите правой кнопкой мыши по **Duskers** в библиотеке Steam → **Управление** → **Просмотреть локальные файлы**.
 3. Скопируйте папку **`Duskers_Data`** из архива в папку игры с **заменой всех файлов**.

@@ -13,7 +13,7 @@ if sys.platform == "win32":
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MOD_DIR = os.path.join(BASE_DIR, "mod", "Duskers_Data")
 DIST_DIR = os.path.join(BASE_DIR, "dist")
-ZIP_NAME = "Duskers_RUS_v1.2.zip"
+ZIP_NAME = "Duskers_RUS_v1.3.zip"
 
 os.makedirs(DIST_DIR, exist_ok=True)
 zip_path = os.path.join(DIST_DIR, ZIP_NAME)
@@ -23,7 +23,7 @@ if not os.path.exists(os.path.join(MOD_DIR, "resources.assets")) or not os.path.
     sys.exit(1)
 
 readme_content = """===========================================================
-               РУСИФИКАТОР ДЛЯ ИГРЫ DUSKERS (v1.2)
+               РУСИФИКАТОР ДЛЯ ИГРЫ DUSKERS (v1.3)
 ===========================================================
 
 ИНСТРУКЦИЯ ПО УСТАНОВКЕ:
