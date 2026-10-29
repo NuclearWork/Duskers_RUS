@@ -117,15 +117,15 @@ def patch_streaming_assets(db):
 def patch_dll(game_dir):
     print("⚙️ Запуск C# инжектора для Assembly-CSharp.dll...")
     dll_patcher_dir = os.path.join(BASE_DIR, "DllPatcher")
-    original_dll = os.path.join(game_dir, "Managed", "Assembly-CSharp.dll")
-    patched_dll = os.path.join(BASE_DIR, "Patched_RU", "Assembly-CSharp.dll")
+    original_dll = os.path.abspath(os.path.join(game_dir, "Managed", "Assembly-CSharp.dll"))
+    patched_dll = os.path.abspath(os.path.join(BASE_DIR, "Patched_RU", "Assembly-CSharp.dll"))
 
     if not os.path.exists(original_dll):
         print(f"[!] Assembly-CSharp.dll не найдена: {original_dll}")
         sys.exit(1)
 
     cmd = ["dotnet", "run", "--", TRANSLATION_DB, original_dll, patched_dll]
-    result = subprocess.run(cmd, cwd=dll_patcher_dir, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=dll_patcher_dir, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     if result.returncode == 0 and os.path.exists(patched_dll):
         managed_out = os.path.join(OUTPUT_DIR, "Managed")

@@ -37,17 +37,36 @@ DEFAULT_STEAM_PATHS = [
 ]
 
 def is_game_running():
-    """Проверяет, запущена ли сейчас игра Duskers"""
+    """Проверяет, запущена ли сейчас игра Duskers (исключая процесс самого патчера/установщика)"""
+    current_pid = os.getpid()
+    target_names = {"duskers.exe", "duskers.x86_64", "duskers.x86", "duskers"}
+
     try:
         import psutil
-        for p in psutil.process_iter(['name']):
-            name = p.info.get('name')
-            if name and 'duskers' in name.lower():
-                return True
+        for p in psutil.process_iter(['pid', 'name']):
+            try:
+                if p.info.get('pid') == current_pid:
+                    continue
+                name = p.info.get('name')
+                if name and name.lower() in target_names:
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
     except Exception:
         try:
-            out = subprocess.check_output("tasklist", shell=True, text=True, errors="ignore")
-            return "duskers.exe" in out.lower()
+            out = subprocess.check_output(
+                'tasklist /FI "IMAGENAME eq duskers.exe" /FO CSV /NH',
+                shell=True,
+                text=True,
+                errors="ignore"
+            )
+            for line in out.strip().splitlines():
+                parts = line.strip().split('","')
+                if parts and len(parts) >= 2:
+                    proc_name = parts[0].strip('"').lower()
+                    proc_pid = parts[1].strip('"')
+                    if proc_name == "duskers.exe" and proc_pid.isdigit() and int(proc_pid) != current_pid:
+                        return True
         except Exception:
             pass
     return False
@@ -399,11 +418,15 @@ class DuskersPatcherGUI(tk.Tk):
 
     def start_install(self):
         if is_game_running():
-            messagebox.showwarning(
+            proceed = messagebox.askyesno(
                 "Игра запущена", 
-                "Игра Duskers сейчас запущена!\n\nПожалуйста, закройте игру перед установкой русификатора, чтобы файлы не были заблокированы Windows."
+                "Обнаружен запущенный процесс игры Duskers (duskers.exe)!\n\n"
+                "Рекомендуется закрыть игру перед установкой русификатора, "
+                "чтобы избежать ошибок блокировки файлов Windows.\n\n"
+                "Вы уверены, что хотите продолжить установку?"
             )
-            return
+            if not proceed:
+                return
         threading.Thread(target=self._install_thread, daemon=True).start()
 
     def _install_thread(self):
@@ -485,11 +508,15 @@ class DuskersPatcherGUI(tk.Tk):
 
     def start_restore(self):
         if is_game_running():
-            messagebox.showwarning(
+            proceed = messagebox.askyesno(
                 "Игра запущена", 
-                "Игра Duskers сейчас запущена!\n\nПожалуйста, закройте игру перед восстановлением файлов, чтобы они не были заблокированы Windows."
+                "Обнаружен запущенный процесс игры Duskers (duskers.exe)!\n\n"
+                "Рекомендуется закрыть игру перед восстановлением файлов, "
+                "чтобы избежать ошибок блокировки файлов Windows.\n\n"
+                "Вы уверены, что хотите продолжить восстановление?"
             )
-            return
+            if not proceed:
+                return
 
         confirm = messagebox.askyesno(
             "Подтверждение", 
